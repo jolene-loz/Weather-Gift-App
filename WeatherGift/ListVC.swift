@@ -103,6 +103,5 @@ extension ListVC: UITableViewDelegate, UITableViewDataSource{
     return (proposedDestinationIndexPath.row == 0 ? sourceIndexPath : proposedDestinationIndexPath)
     }
     
-    
 }
 
