@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import GooglePlaces
 
 class ListVC: UIViewController {
 
@@ -15,7 +16,7 @@ class ListVC: UIViewController {
     @IBOutlet weak var addBarButton: UIBarButtonItem!
     @IBOutlet weak var editBarButton: UIBarButtonItem!
     
-    var locationsArray = [String]()
+    var locationsArray = [WeatherLocation]()
     var currentPage = 0
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -23,22 +24,6 @@ class ListVC: UIViewController {
         tableView.dataSource = self
         // Do any additional setup after loading the view.
     }
-    
-
-    @IBAction func editBarButtonPressed(_ sender: UIBarButtonItem) {
-    if tableView.isEditing{ //if button clicked while, editing --> done
-            tableView.setEditing(false, animated: true) //turn off table view editing
-            editBarButton.title = "Edit"
-            addBarButton.isEnabled = true
-        } else {
-            tableView.setEditing(true, animated: true)
-            addBarButton.isEnabled = false
-            editBarButton.title = "Done"
-            
-        }
-    }
-    
-
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == "ToPageVC"{
@@ -49,20 +34,38 @@ class ListVC: UIViewController {
         }
     }
     
+    
 
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
+    @IBAction func editBarButtonPressed(_ sender: UIBarButtonItem) {
+    if tableView.isEditing == true { //if button clicked while, editing --> done
+            tableView.setEditing(false, animated: true) //turn off table view editing
+            editBarButton.title = "Edit"
+            addBarButton.isEnabled = true
+        } else {
+            tableView.setEditing(true, animated: true)
+            editBarButton.title = "Done"
+            addBarButton.isEnabled = false
+        
+            
+        }
     }
-    */
-
+    
+    @IBAction func addBarButtonPressed(_ sender: UIBarButtonItem) {
+        let autocompleteController = GMSAutocompleteViewController()
+        autocompleteController.delegate = self
+        present(autocompleteController, animated: true, completion: nil)
+        
+    }
+    
 }
+    
+
+
+
+
 
 extension ListVC: UITableViewDelegate, UITableViewDataSource{
+    
   
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return locationsArray.count
@@ -70,7 +73,7 @@ extension ListVC: UITableViewDelegate, UITableViewDataSource{
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "LocationCell", for: indexPath)
-        cell.textLabel?.text = locationsArray[indexPath.row]
+        cell.textLabel?.text = locationsArray[indexPath.row].name
         return cell
     }
     
@@ -79,6 +82,7 @@ extension ListVC: UITableViewDelegate, UITableViewDataSource{
         if editingStyle == .delete{
             locationsArray.remove(at: indexPath.row)
             tableView.deleteRows(at: [indexPath], with: .fade)
+
         }
     }
     
@@ -100,8 +104,47 @@ extension ListVC: UITableViewDelegate, UITableViewDataSource{
     
     func tableView(_ tableView: UITableView, targetIndexPathForMoveFromRowAt sourceIndexPath: IndexPath, toProposedIndexPath proposedDestinationIndexPath: IndexPath) -> IndexPath {
    
-    return (proposedDestinationIndexPath.row == 0 ? sourceIndexPath : proposedDestinationIndexPath)
+        return (proposedDestinationIndexPath.row == 0 ? sourceIndexPath : proposedDestinationIndexPath)
+    }
+    
+    func updateTable(place: GMSPlace){
+        let newIndexPath = IndexPath(row: locationsArray.count, section: 0)
+        let latitude = place.coordinate.latitude
+        let longitude = place.coordinate.longitude
+        let newCoordinates = "\(latitude),\(longitude)"
+        let newWeatherLocation = WeatherLocation(name: place.name, coordinates: newCoordinates)
+        locationsArray.append(newWeatherLocation)
+        tableView.insertRows(at: [newIndexPath], with: .automatic)
+    }
+}
+
+
+extension ListVC: GMSAutocompleteViewControllerDelegate {
+    
+    // Handle the user's selection.
+    func viewController(_ viewController: GMSAutocompleteViewController, didAutocompleteWith place: GMSPlace) {
+        print("Place name: \(place.name)")
+        dismiss(animated: true, completion: nil)
+        updateTable(place: place)
+    }
+    
+    func viewController(_ viewController: GMSAutocompleteViewController, didFailAutocompleteWithError error: Error) {
+        // TODO: handle the error.
+        print("Error: ", error.localizedDescription)
+    }
+    
+    // User canceled the operation.
+    func wasCancelled(_ viewController: GMSAutocompleteViewController) {
+        dismiss(animated: true, completion: nil)
+    }
+    
+    // Turn the network activity indicator on and off again.
+    func didRequestAutocompletePredictions(_ viewController: GMSAutocompleteViewController) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = true
+    }
+    
+    func didUpdateAutocompletePredictions(_ viewController: GMSAutocompleteViewController) {
+        UIApplication.shared.isNetworkActivityIndicatorVisible = false
     }
     
 }
-

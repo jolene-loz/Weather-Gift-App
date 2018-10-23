@@ -10,8 +10,10 @@ import UIKit
 
 class PageVC: UIPageViewController {
     
+
+    
     var currentPage = 0
-    var locationsArray = ["Local City", "Sydney, Australia", "Accra, Ghana", "Uglich, Russia"]
+    var locationsArray = [WeatherLocation]()
     var pageControl: UIPageControl!
     var listButton: UIButton!
     var barButtonWidth:CGFloat = 44
@@ -20,9 +22,14 @@ class PageVC: UIPageViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         delegate = self
         dataSource = self
+
+        let newLocation  = WeatherLocation()
+        newLocation.name = ""
+        locationsArray.append(newLocation)
+        
+
         // Do any additional setup after loading the view.
         setViewControllers([createDetailVC(forPage: 0)], direction: .forward, animated: false, completion: nil)
     }
@@ -69,13 +76,14 @@ class PageVC: UIPageViewController {
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        if segue.identifier == "ToListVC"{
+        guard let currentViewController = self.viewControllers?[0] as? DetailVC else {return}
+        locationsArray = currentViewController.locationsArray
+        if segue.identifier == "ToListVC" {
             let destination = segue.destination as! ListVC
             destination.locationsArray = locationsArray
             destination.currentPage = currentPage
         }
     }
-    
     
     
     @IBAction func unwindFromListVC(sender: UIStoryboardSegue){
@@ -90,9 +98,9 @@ class PageVC: UIPageViewController {
         locationsArray.count - 1)
         
         let detailVC = storyboard!.instantiateViewController(withIdentifier: "DetailVC") as! DetailVC
-        
-        detailVC.currentPage = currentPage
+
         detailVC.locationsArray = locationsArray
+        detailVC.currentPage = currentPage
         
         return detailVC
         
